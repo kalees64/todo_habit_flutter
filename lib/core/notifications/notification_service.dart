@@ -1,0 +1,194 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+import '../constants/app_constants.dart';
+
+class NotificationService {
+  NotificationService._();
+  static final NotificationService instance = NotificationService._();
+
+  final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  bool _isInitialized = false;
+  bool get _isTest => Platform.environment.containsKey('FLUTTER_TEST');
+
+  Future<void> initialize() async {
+    if (_isInitialized || _isTest) return;
+
+    try {
+      tz.initializeTimeZones();
+      try {
+        final timeZoneInfo = await FlutterTimezone.getLocalTimezone();
+        tz.setLocalLocation(tz.getLocation(timeZoneInfo.identifier));
+      } catch (e) {
+        debugPrint('Could not get local timezone: $e, defaulting to UTC');
+        tz.setLocalLocation(tz.UTC);
+      }
+
+      const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const initSettings = InitializationSettings(android: androidInit);
+
+      await _notificationsPlugin.initialize(
+        settings: initSettings,
+        onDidReceiveNotificationResponse: (details) {
+          debugPrint('Notification tapped: ${details.payload}');
+        },
+      );
+
+      _isInitialized = true;
+    } catch (e) {
+      debugPrint('NotificationService init error: $e');
+    }
+  }
+
+  Future<bool> requestPermissions() async {
+    if (_isTest || !Platform.isAndroid) return true;
+
+    final androidPlugin =
+        _notificationsPlugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+
+    if (androidPlugin != null) {
+      final granted = await androidPlugin.requestNotificationsPermission();
+      return granted ?? false;
+    }
+    return false;
+  }
+
+  Future<bool> areNotificationsEnabled() async {
+    if (!Platform.isAndroid) return true;
+
+    final androidPlugin =
+        _notificationsPlugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+
+    if (androidPlugin != null) {
+      final enabled = await androidPlugin.areNotificationsEnabled();
+      return enabled ?? false;
+    }
+    return false;
+  }
+
+  NotificationDetails _notificationDetails() {
+    return const NotificationDetails(
+      android: AndroidNotificationDetails(
+        AppConstants.notificationChannelId,
+        AppConstants.notificationChannelName,
+        channelDescription: AppConstants.notificationChannelDescription,
+        importance: Importance.high,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+      ),
+    );
+  }
+
+  /// Hashes a String ID into a unique 31-bit positive integer for Android notification IDs
+  int _hashId(String id, {int prefix = 0}) {
+    return (id.hashCode.abs() + prefix) % 2147483647;
+  }
+
+  /// Schedules a notification for a task at its due date
+  Future<void> scheduleTaskDueNotification({
+    required String taskId,
+    required String taskTitle,
+    required DateTime dueDate,
+  }) async {
+    if (_isTest) return;
+    await initialize();
+
+    final scheduledDate = tz.TZDateTime.from(dueDate.toLocal(), tz.local);
+    if (scheduledDate.isBefore(tz.TZDateTime.now(tz.local))) {
+      // Due date is already in the past, do not schedule
+      return;
+    }
+
+    final id = _hashId(taskId, prefix: 10000);
+    try {
+      await _notificationsPlugin.zonedSchedule(
+        id: id,
+        title: 'Task Due: $taskTitle',
+        body: 'It\'s time to complete this task.',
+        scheduledDate: scheduledDate,
+        notificationDetails: _notificationDetails(),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        payload: taskId,
+      );
+    } catch (e) {
+      debugPrint('Error scheduling task notification: $e');
+    }
+  }
+
+  /// Cancels any scheduled notification for a task
+  Future<void> cancelTaskNotification(String taskId) async {
+    if (_isTest) return;
+    await initialize();
+    final id = _hashId(taskId, prefix: 10000);
+    try {
+      await _notificationsPlugin.cancel(id: id);
+    } catch (e) {
+      debugPrint('Error canceling task notification: $e');
+    }
+  }
+
+  /// Schedules a daily streak preservation notification for a habit
+  /// [reminderTime] is formatted as "HH:mm" (24h local time)
+  Future<void> scheduleHabitStreakNudge({
+    required String habitId,
+    required String habitTitle,
+    required String reminderTime,
+  }) async {
+    if (_isTest) return;
+    await initialize();
+
+    final parts = reminderTime.split(':');
+    if (parts.length != 2) return;
+    final hour = int.tryParse(parts[0]) ?? 20;
+    final minute = int.tryParse(parts[1]) ?? 0;
+
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
+
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+
+    final id = _hashId(habitId, prefix: 50000);
+    try {
+      await _notificationsPlugin.zonedSchedule(
+        id: id,
+        title: 'Don\'t break your streak!',
+        body: 'Complete \'$habitTitle\' today to keep your streak alive.',
+        scheduledDate: scheduledDate,
+        notificationDetails: _notificationDetails(),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time,
+        payload: habitId,
+      );
+    } catch (e) {
+      debugPrint('Error scheduling habit nudge: $e');
+    }
+  }
+
+  /// Cancels habit notification
+  Future<void> cancelHabitNotification(String habitId) async {
+    if (_isTest) return;
+    await initialize();
+    final id = _hashId(habitId, prefix: 50000);
+    try {
+      await _notificationsPlugin.cancel(id: id);
+    } catch (e) {
+      debugPrint('Error canceling habit notification: $e');
+    }
+  }
+}
