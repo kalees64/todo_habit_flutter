@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/notifications/notification_service.dart';
 import '../../../../core/providers/database_providers.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../../../domain/entities/task.dart';
@@ -98,4 +99,60 @@ final todayRhythmStatsProvider = Provider<({int done, int total, double progress
 final completedTasksStreamProvider = StreamProvider<List<Task>>((ref) {
   final getCompletedTasks = ref.watch(getCompletedTasksProvider);
   return getCompletedTasks.watch();
+});
+
+/// Provider that keeps the un-dismissible pinned daily tasks notification in sync
+/// with active and completed tasks in real-time.
+///
+/// Behavior:
+/// - Evaluates overdue and today's tasks.
+/// - If all tasks are completed or no tasks are planned today: cancels the pinned notification.
+/// - If tasks remain: shows/updates the notification with live counts & bullet list.
+/// - Pre-schedules tomorrow's 00:00 midnight alarm with tomorrow's planned tasks.
+final dailyPinnedNotificationSyncProvider = Provider<void>((ref) {
+  final activeTasksAsync = ref.watch(activeTasksStreamProvider);
+  final completedTasksAsync = ref.watch(completedTasksStreamProvider);
+
+  activeTasksAsync.whenData((activeTasks) {
+    completedTasksAsync.whenData((completedTasks) {
+      final now = DateTime.now();
+
+      // Overdue + Today's pending tasks (per Socratic Gate approval)
+      final pendingTasks = <Task>[];
+      for (final t in activeTasks) {
+        if (t.dueDate != null) {
+          final localDue = t.dueDate!.toLocal();
+          if (AppDateUtils.isSameDay(localDue, now) || localDue.isBefore(now)) {
+            pendingTasks.add(t);
+          }
+        }
+      }
+
+      int completedTodayCount = 0;
+      for (final t in completedTasks) {
+        if (t.completedAt != null && AppDateUtils.isSameDay(t.completedAt!, now)) {
+          completedTodayCount++;
+        }
+      }
+
+      final totalTodayCount = pendingTasks.length + completedTodayCount;
+
+      // Update or clear the pinned notification based on remaining tasks
+      NotificationService.instance.showOrUpdateDailyPinnedNotification(
+        pendingTasks: pendingTasks,
+        totalTodayCount: totalTodayCount,
+        completedTodayCount: completedTodayCount,
+      );
+
+      // Pre-schedule midnight (00:00:00) exact alarm for tomorrow's tasks
+      final tomorrow = now.add(const Duration(days: 1));
+      final tomorrowTasks = activeTasks
+          .where((t) => t.dueDate != null && AppDateUtils.isSameDay(t.dueDate!.toLocal(), tomorrow))
+          .toList();
+
+      NotificationService.instance.scheduleMidnightPinnedNotification(
+        tomorrowTasks: tomorrowTasks,
+      );
+    });
+  });
 });

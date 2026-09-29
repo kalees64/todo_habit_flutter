@@ -33,6 +33,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   DateTime? _selectedDate;
   late DateTime _weekStart;
+  late final AppLifecycleListener _lifecycleListener;
 
   @override
   void initState() {
@@ -41,10 +42,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final today = DateTime(now.year, now.month, now.day);
     _weekStart = today.subtract(Duration(days: today.weekday - 1));
 
+    _lifecycleListener = AppLifecycleListener(
+      onResume: () {
+        // When app resumes (e.g. across midnight or waking up), refresh tasks and notifications
+        ref.invalidate(activeTasksStreamProvider);
+        ref.invalidate(completedTasksStreamProvider);
+      },
+    );
+
     // Request notification permissions gracefully on first launch
     WidgetsBinding.instance.addPostFrameCallback((_) {
       NotificationService.instance.requestPermissions();
     });
+  }
+
+  @override
+  void dispose() {
+    _lifecycleListener.dispose();
+    super.dispose();
   }
 
   void _prevWeek() {
@@ -122,6 +137,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final customColors = theme.extension<TaskFlowColors>();
+    ref.watch(dailyPinnedNotificationSyncProvider);
     final categorizedAsync = ref.watch(categorizedTasksProvider);
     final rhythmStats = ref.watch(todayRhythmStatsProvider);
 

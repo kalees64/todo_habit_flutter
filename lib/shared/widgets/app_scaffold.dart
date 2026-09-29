@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/app_icons.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/spacing.dart';
+import '../../features/todo/presentation/providers/task_providers.dart';
 
-class AppScaffold extends StatelessWidget {
+class AppScaffold extends ConsumerWidget {
   const AppScaffold({
     super.key,
     required this.navigationShell,
@@ -21,9 +23,10 @@ class AppScaffold extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final customColors = theme.extension<TaskFlowColors>();
+    ref.watch(dailyPinnedNotificationSyncProvider);
     final currentIndex = navigationShell.currentIndex;
     final enableHabits = AppConstants.enableHabits;
 

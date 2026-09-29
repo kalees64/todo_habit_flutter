@@ -168,7 +168,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 color: customColors?.hairlineBorder ?? theme.colorScheme.outlineVariant,
               ),
             ),
-            child: Row(
+            child: Column(
+              children: [
+                Row(
               children: [
                 Container(
                   width: 38,
@@ -224,8 +226,54 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
               ],
             ),
-          ),
-          const SizedBox(height: AppSpacing.p24),
+            const Divider(height: AppSpacing.p24),
+            Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
+                  ),
+                  child: Icon(
+                    LucideIcons.calendar,
+                    size: 18,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.p12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Daily Midnight Pinned Tasks',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        'Starts at 00:00. Pinned until all planned tasks for the day are finished.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: customColors?.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  LucideIcons.shieldCheck,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: AppSpacing.p24),
 
           // Section 3: Developer Info (Resume)
           Text(

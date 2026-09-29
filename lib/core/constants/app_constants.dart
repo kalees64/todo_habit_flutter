@@ -14,9 +14,17 @@ class AppConstants {
   static const String recurrenceWeekly = 'weekly';
   static const String recurrenceCustom = 'custom';
 
-  // Notification Channel
+  // Notification Channels
   static const String notificationChannelId = 'taskflow_reminders';
   static const String notificationChannelName = 'Task & Habit Reminders';
   static const String notificationChannelDescription =
       'Notifications for task due dates and habit streak preservation';
+
+  static const String pinnedNotificationChannelId = 'taskflow_pinned_tasks';
+  static const String pinnedNotificationChannelName = 'Today\'s Planned Tasks';
+  static const String pinnedNotificationChannelDescription =
+      'Persistent pinned notification of today\'s planned tasks';
+
+  static const int pinnedNotificationId = 99999;
+  static const int midnightScheduledNotificationId = 99998;
 }

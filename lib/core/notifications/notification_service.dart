@@ -4,7 +4,9 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import '../../domain/entities/task.dart';
 import '../constants/app_constants.dart';
+import '../utils/date_utils.dart';
 
 class NotificationService {
   NotificationService._();
@@ -189,6 +191,158 @@ class NotificationService {
       await _notificationsPlugin.cancel(id: id);
     } catch (e) {
       debugPrint('Error canceling habit notification: $e');
+    }
+  }
+
+  /// Displays or updates the persistent, un-dismissible pinned notification
+  /// of today's planned tasks.
+  ///
+  /// Criteria:
+  /// - Only shown when user has planned tasks for today that are pending.
+  /// - User is unable to clear/swipe away this notification (ongoing: true).
+  /// - Automatically cancels/dismisses when all tasks for today are completed
+  ///   or when no tasks are scheduled.
+  Future<void> showOrUpdateDailyPinnedNotification({
+    required List<Task> pendingTasks,
+    required int totalTodayCount,
+    required int completedTodayCount,
+  }) async {
+    if (_isTest) return;
+    await initialize();
+
+    // If no tasks scheduled or all planned tasks are completed, cancel notification
+    if (pendingTasks.isEmpty || totalTodayCount == 0) {
+      await cancelDailyPinnedNotification();
+      return;
+    }
+
+    final remaining = pendingTasks.length;
+    final title =
+        "Today's Tasks • $remaining remaining ($completedTodayCount/$totalTodayCount done)";
+    final summaryText = '$remaining task${remaining == 1 ? '' : 's'} remaining';
+
+    final lines = pendingTasks.map((t) {
+      final timeStr =
+          t.dueDate != null ? '${AppDateUtils.formatTime(t.dueDate!)} - ' : '';
+      return '• $timeStr${t.title}';
+    }).toList();
+
+    final inboxStyle = InboxStyleInformation(
+      lines,
+      contentTitle: title,
+      summaryText: summaryText,
+    );
+
+    final androidDetails = AndroidNotificationDetails(
+      AppConstants.pinnedNotificationChannelId,
+      AppConstants.pinnedNotificationChannelName,
+      channelDescription: AppConstants.pinnedNotificationChannelDescription,
+      importance: Importance.low, // Silent lock-screen pinning at midnight
+      priority: Priority.low,
+      ongoing: true, // User cannot swipe or clear away
+      autoCancel: false,
+      onlyAlertOnce: true, // Silent live updates when tasks are checked off
+      showWhen: true,
+      icon: '@mipmap/ic_launcher',
+      styleInformation: inboxStyle,
+    );
+
+    try {
+      await _notificationsPlugin.show(
+        id: AppConstants.pinnedNotificationId,
+        title: title,
+        body: summaryText,
+        notificationDetails: NotificationDetails(android: androidDetails),
+        payload: 'daily_pinned_tasks',
+      );
+    } catch (e) {
+      debugPrint('Error showing daily pinned notification: $e');
+    }
+  }
+
+  /// Cancels the daily pinned notification
+  Future<void> cancelDailyPinnedNotification() async {
+    if (_isTest) return;
+    await initialize();
+    try {
+      await _notificationsPlugin.cancel(id: AppConstants.pinnedNotificationId);
+    } catch (e) {
+      debugPrint('Error canceling daily pinned notification: $e');
+    }
+  }
+
+  /// Schedules the midnight (00:00:00) exact alarm to pin tomorrow's planned tasks
+  /// right as the new day begins.
+  Future<void> scheduleMidnightPinnedNotification({
+    required List<Task> tomorrowTasks,
+  }) async {
+    if (_isTest) return;
+    await initialize();
+
+    final now = tz.TZDateTime.now(tz.local);
+    final tomorrow = now.add(const Duration(days: 1));
+    final midnight = tz.TZDateTime(
+      tz.local,
+      tomorrow.year,
+      tomorrow.month,
+      tomorrow.day,
+      0,
+      0,
+      0,
+    );
+
+    if (tomorrowTasks.isEmpty) {
+      try {
+        await _notificationsPlugin.cancel(
+            id: AppConstants.midnightScheduledNotificationId);
+      } catch (e) {
+        debugPrint('Error canceling midnight notification: $e');
+      }
+      return;
+    }
+
+    final count = tomorrowTasks.length;
+    final title = "Today's Tasks • $count planned for today";
+    final summaryText = '$count task${count == 1 ? '' : 's'} scheduled';
+
+    final lines = tomorrowTasks.map((t) {
+      final timeStr =
+          t.dueDate != null ? '${AppDateUtils.formatTime(t.dueDate!)} - ' : '';
+      return '• $timeStr${t.title}';
+    }).toList();
+
+    final inboxStyle = InboxStyleInformation(
+      lines,
+      contentTitle: title,
+      summaryText: summaryText,
+    );
+
+    final androidDetails = AndroidNotificationDetails(
+      AppConstants.pinnedNotificationChannelId,
+      AppConstants.pinnedNotificationChannelName,
+      channelDescription: AppConstants.pinnedNotificationChannelDescription,
+      importance: Importance.low, // Silent lock-screen pin
+      priority: Priority.low,
+      ongoing: true, // Pinned, user cannot clear
+      autoCancel: false,
+      onlyAlertOnce: true,
+      showWhen: true,
+      icon: '@mipmap/ic_launcher',
+      styleInformation: inboxStyle,
+    );
+
+    try {
+      await _notificationsPlugin.zonedSchedule(
+        id: AppConstants.midnightScheduledNotificationId,
+        title: title,
+        body: summaryText,
+        scheduledDate: midnight,
+        notificationDetails: NotificationDetails(android: androidDetails),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        payload: 'daily_pinned_tasks',
+      );
+    } catch (e) {
+      debugPrint('Error scheduling midnight pinned notification: $e');
     }
   }
 }
