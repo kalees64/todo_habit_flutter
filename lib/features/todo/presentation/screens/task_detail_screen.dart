@@ -8,6 +8,7 @@ import '../../../../core/theme/colors.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../../../domain/entities/task.dart';
+import '../../../../shared/widgets/ad_banner_widget.dart';
 import '../../../../shared/widgets/confirm_dialog.dart';
 import '../widgets/add_edit_task_sheet.dart';
 
@@ -26,6 +27,12 @@ class TaskDetailScreen extends ConsumerWidget {
     final taskRepo = ref.watch(taskRepositoryProvider);
 
     return Scaffold(
+      bottomNavigationBar: const SafeArea(
+        top: false,
+        child: AdBannerWidget(
+          margin: EdgeInsets.only(bottom: AppSpacing.p8, top: AppSpacing.p4),
+        ),
+      ),
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(LucideIcons.arrowLeft),

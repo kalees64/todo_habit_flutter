@@ -10,6 +10,7 @@ import '../../../../core/theme/colors.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../../../domain/entities/task.dart';
+import '../../../../shared/widgets/ad_banner_widget.dart';
 import '../../../../shared/widgets/confirm_dialog.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../providers/task_providers.dart';
@@ -183,6 +184,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             color: theme.colorScheme.onPrimary,
             fontWeight: FontWeight.w600,
           ),
+        ),
+      ),
+      bottomNavigationBar: const SafeArea(
+        top: false,
+        child: AdBannerWidget(
+          margin: EdgeInsets.only(bottom: AppSpacing.p4, top: AppSpacing.p4),
         ),
       ),
       body: categorizedAsync.when(
