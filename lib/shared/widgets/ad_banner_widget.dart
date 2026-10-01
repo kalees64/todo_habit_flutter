@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../core/constants/ad_constants.dart';
+import '../../core/constants/app_constants.dart';
 import '../../core/theme/colors.dart';
 import '../../core/theme/spacing.dart';
 
@@ -27,10 +28,13 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
   @override
   void initState() {
     super.initState();
-    _loadBannerAd();
+    if (AppConstants.enableAds) {
+      _loadBannerAd();
+    }
   }
 
   void _loadBannerAd({bool useFallbackTestAd = false}) {
+    if (!AppConstants.enableAds) return;
     try {
       final unitId = useFallbackTestAd
           ? AdConstants.testBannerUnitId
@@ -81,7 +85,7 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isLoaded || _bannerAd == null) {
+    if (!AppConstants.enableAds || !_isLoaded || _bannerAd == null) {
       return const SizedBox.shrink();
     }
 

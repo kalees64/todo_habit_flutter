@@ -7,6 +7,7 @@ class AppConstants {
 
   // Feature Flags
   static const bool enableHabits = false;
+  static const bool enableAds = false; // Disabled for now, will enable in later releases
 
   // Recurrence Rules
   static const String recurrenceNone = 'none';
