@@ -1,0 +1,28 @@
+#!/bin/sh
+# Pre-push hook to ensure app version in pubspec.yaml is checked before push
+
+# Read current branch
+current_branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+if [ "$current_branch" = "main" ]; then
+  # Extract version from pubspec.yaml
+  version=$(grep '^version:' pubspec.yaml | awk '{print $2}' | tr -d '\r')
+  tag="v$version"
+
+  echo "=========================================="
+  echo "🔍 [Pre-Push Check] App Version: $version"
+  echo "=========================================="
+
+  # Check if tag already exists locally or on remote
+  if git rev-parse "$tag" >/dev/null 2>&1; then
+    echo "⚠️  WARNING: Tag $tag already exists in git history!"
+    echo "   If this push contains new changes/features for a release,"
+    echo "   please increment the version in pubspec.yaml (e.g. 1.0.1+2)"
+    echo "   so GitHub Actions can create a new release."
+    echo "------------------------------------------"
+  else
+    echo "✅ Version $version is ready for release tag $tag."
+  fi
+fi
+
+exit 0

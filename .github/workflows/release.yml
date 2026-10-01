@@ -1,0 +1,115 @@
+name: Release Build & Publish APKs
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Release TaskFlow
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract App Version from pubspec.yaml
+        id: app_version
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}' | tr -d '\r')
+          TAG="v$VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "TAG=$TAG" >> $GITHUB_OUTPUT
+          echo "Detected TaskFlow App Version: $VERSION (Tag: $TAG)"
+
+      - name: Verify Version Tag Uniqueness
+        id: check_tag
+        run: |
+          TAG="${{ steps.app_version.outputs.TAG }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "TAG_EXISTS=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Tag $TAG already exists on repository."
+          else
+            echo "TAG_EXISTS=false" >> $GITHUB_OUTPUT
+            echo "✅ Tag $TAG is new and unique."
+          fi
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+          cache-key: "flutter-:os:-:channel:-:version:-:arch:-:hash:"
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Code Quality & Static Analysis
+        run: flutter analyze
+
+      - name: Run Automated Test Suite
+        run: flutter test
+
+      - name: Build Split-per-ABI Release APKs
+        run: flutter build apk --split-per-abi
+
+      - name: Build Universal Release APK
+        run: flutter build apk
+
+      - name: Package & Rename Release Artifacts
+        id: prepare_artifacts
+        run: |
+          VERSION="${{ steps.app_version.outputs.VERSION }}"
+          mkdir -p release-apks
+
+          # Copy and rename split-per-abi APKs
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "release-apks/TaskFlow-v${VERSION}-arm64-v8a.apk"
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk "release-apks/TaskFlow-v${VERSION}-armeabi-v7a.apk"
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk "release-apks/TaskFlow-v${VERSION}-x86_64.apk"
+
+          # Copy and rename universal APK
+          cp build/app/outputs/flutter-apk/app-release.apk "release-apks/TaskFlow-v${VERSION}-universal.apk"
+
+          ls -lh release-apks/
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.app_version.outputs.TAG }}
+          name: "TaskFlow v${{ steps.app_version.outputs.VERSION }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            ## 📱 TaskFlow v${{ steps.app_version.outputs.VERSION }}
+
+            ### 📦 Downloadable APK Files
+            | Architecture | APK File | Description |
+            |---|---|---|
+            | **ARM64** | `TaskFlow-v${{ steps.app_version.outputs.VERSION }}-arm64-v8a.apk` | Most modern Android phones (**Recommended**) |
+            | **ARMv7** | `TaskFlow-v${{ steps.app_version.outputs.VERSION }}-armeabi-v7a.apk` | Older 32-bit Android devices |
+            | **x86_64** | `TaskFlow-v${{ steps.app_version.outputs.VERSION }}-x86_64.apk` | Emulators & ChromeOS |
+            | **Universal** | `TaskFlow-v${{ steps.app_version.outputs.VERSION }}-universal.apk` | Compatible with all devices |
+
+            ---
+            *Built and published automatically via GitHub Actions CI/CD.*
+          files: |
+            release-apks/TaskFlow-v${{ steps.app_version.outputs.VERSION }}-arm64-v8a.apk
+            release-apks/TaskFlow-v${{ steps.app_version.outputs.VERSION }}-armeabi-v7a.apk
+            release-apks/TaskFlow-v${{ steps.app_version.outputs.VERSION }}-x86_64.apk
+            release-apks/TaskFlow-v${{ steps.app_version.outputs.VERSION }}-universal.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
