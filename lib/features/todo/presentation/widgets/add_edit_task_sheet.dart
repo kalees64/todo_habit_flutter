@@ -335,7 +335,7 @@ class _AddEditTaskSheetState extends ConsumerState<AddEditTaskSheet> {
                     children: [
                       TextField(
                         controller: _titleController,
-                        maxLength: 80,
+                        maxLength: 160,
                         maxLines: 2,
                         textCapitalization: TextCapitalization.sentences,
                         style: theme.textTheme.titleMedium?.copyWith(
@@ -374,7 +374,7 @@ class _AddEditTaskSheetState extends ConsumerState<AddEditTaskSheet> {
                             ],
                           ),
                           Text(
-                            '${_titleController.text.length}/80',
+                            '${_titleController.text.length}/160',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: customColors?.textSecondary,
                               fontWeight: FontWeight.w600,

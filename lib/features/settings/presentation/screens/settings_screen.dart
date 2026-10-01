@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../../core/constants/app_icons.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/notifications/notification_service.dart';
@@ -24,7 +25,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _checkNotificationStatus() async {
-    final enabled = await NotificationService.instance.areNotificationsEnabled();
+    final enabled = await NotificationService.instance
+        .areNotificationsEnabled();
     if (mounted) {
       setState(() {
         _notificationsEnabled = enabled;
@@ -96,7 +98,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               color: customColors?.cardBackground ?? theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
               border: Border.all(
-                color: customColors?.hairlineBorder ?? theme.colorScheme.outlineVariant,
+                color:
+                    customColors?.hairlineBorder ??
+                    theme.colorScheme.outlineVariant,
               ),
             ),
             child: Column(
@@ -165,115 +169,81 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               color: customColors?.cardBackground ?? theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
               border: Border.all(
-                color: customColors?.hairlineBorder ?? theme.colorScheme.outlineVariant,
+                color:
+                    customColors?.hairlineBorder ??
+                    theme.colorScheme.outlineVariant,
               ),
             ),
             child: Column(
               children: [
                 Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: _notificationsEnabled
-                        ? theme.colorScheme.primaryContainer.withValues(alpha: 0.2)
-                        : theme.colorScheme.errorContainer.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
-                  ),
-                  child: Icon(
-                    _notificationsEnabled
-                        ? LucideIcons.bellRing
-                        : LucideIcons.bellOff,
-                    size: 18,
-                    color: _notificationsEnabled
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.error,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.p12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Notification Status',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: _notificationsEnabled
+                            ? theme.colorScheme.primaryContainer.withValues(
+                                alpha: 0.2,
+                              )
+                            : theme.colorScheme.errorContainer.withValues(
+                                alpha: 0.3,
+                              ),
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusMedium,
                         ),
                       ),
-                      Text(
+                      child: Icon(
                         _notificationsEnabled
-                            ? 'Active (Exact alarms & nudges ready)'
-                            : 'Disabled or permission pending',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: customColors?.textSecondary,
-                          fontSize: 12,
-                        ),
+                            ? LucideIcons.bellRing
+                            : LucideIcons.bellOff,
+                        size: 18,
+                        color: _notificationsEnabled
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.error,
                       ),
-                    ],
-                  ),
-                ),
-                if (!_notificationsEnabled)
-                  FilledButton(
-                    onPressed: _requestNotificationPermission,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.p12),
-                      visualDensity: VisualDensity.compact,
                     ),
-                    child: const Text('Enable'),
-                  ),
-              ],
-            ),
-            const Divider(height: AppSpacing.p24),
-            Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
-                  ),
-                  child: Icon(
-                    LucideIcons.calendar,
-                    size: 18,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.p12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Daily Midnight Pinned Tasks',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                    const SizedBox(width: AppSpacing.p12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Notification Status',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            _notificationsEnabled
+                                ? 'Active'
+                                : 'Disabled or permission pending',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: customColors?.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        'Starts at 00:00. Pinned until all planned tasks for the day are finished.',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: customColors?.textSecondary,
-                          fontSize: 12,
+                    ),
+                    if (!_notificationsEnabled)
+                      FilledButton(
+                        onPressed: _requestNotificationPermission,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: theme.colorScheme.primary,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.p12,
+                          ),
+                          visualDensity: VisualDensity.compact,
                         ),
+                        child: const Text('Enable'),
                       ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  LucideIcons.shieldCheck,
-                  size: 20,
-                  color: theme.colorScheme.primary,
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ),
-      const SizedBox(height: AppSpacing.p24),
+          ),
+          const SizedBox(height: AppSpacing.p24),
 
           // Section 3: Developer Info (Resume)
           Text(
@@ -304,7 +274,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               color: customColors?.cardBackground ?? theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
               border: Border.all(
-                color: customColors?.hairlineBorder ?? theme.colorScheme.outlineVariant,
+                color:
+                    customColors?.hairlineBorder ??
+                    theme.colorScheme.outlineVariant,
               ),
             ),
             child: Column(
@@ -320,7 +292,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   context,
                   icon: LucideIcons.database,
                   title: 'On-Device SQLite Storage',
-                  subtitle: 'Type-safe relational data powered by Drift engine.',
+                  subtitle:
+                      'Type-safe relational data powered by Drift engine.',
                 ),
                 const Divider(height: AppSpacing.p24),
                 _buildInfoRow(
@@ -347,7 +320,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         color: customColors?.cardBackground ?? theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
         border: Border.all(
-          color: customColors?.hairlineBorder ?? theme.colorScheme.outlineVariant,
+          color:
+              customColors?.hairlineBorder ?? theme.colorScheme.outlineVariant,
         ),
       ),
       child: Column(
@@ -447,7 +421,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               label: const Text('View Full Experience & Projects'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: theme.colorScheme.primary,
-                side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.5)),
+                side: BorderSide(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.5),
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
                 ),
@@ -462,7 +438,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _buildSkillBadge(BuildContext context, String text) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.p8, vertical: 3),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.p8,
+        vertical: 3,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.primaryContainer.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
@@ -525,7 +504,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   top: Radius.circular(AppSpacing.radiusSheet),
                 ),
                 border: Border.all(
-                  color: customColors?.hairlineBorder ?? theme.colorScheme.outlineVariant,
+                  color:
+                      customColors?.hairlineBorder ??
+                      theme.colorScheme.outlineVariant,
                 ),
               ),
               child: ListView(
@@ -538,8 +519,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       width: 40,
                       height: 5,
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+                        color: theme.colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.3,
+                        ),
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusPill,
+                        ),
                       ),
                     ),
                   ),
@@ -629,13 +614,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const Divider(height: AppSpacing.p24),
 
                   // Honors & Certifications
-                  _buildResumeSectionHeader(context, 'ACHIEVEMENTS & CERTIFICATIONS'),
+                  _buildResumeSectionHeader(
+                    context,
+                    'ACHIEVEMENTS & CERTIFICATIONS',
+                  ),
                   const SizedBox(height: AppSpacing.p8),
-                  _buildBulletPoint(context, 'Completed NCC "C" Certificate (Grade C) — discipline, leadership, teamwork.'),
-                  _buildBulletPoint(context, 'IBM Academic Best Project Award — Indoor Plant Management System.'),
-                  _buildBulletPoint(context, 'Infosys Springboard — Full Stack (MEAN).'),
-                  _buildBulletPoint(context, 'Udemy — Prompt Engineering & LLM Integration.'),
-                  _buildBulletPoint(context, 'GUVI & Shiash Info Solutions — Python Full Stack Internship.'),
+                  _buildBulletPoint(
+                    context,
+                    'Completed NCC "C" Certificate (Grade C) — discipline, leadership, teamwork.',
+                  ),
+                  _buildBulletPoint(
+                    context,
+                    'IBM Academic Best Project Award — Indoor Plant Management System.',
+                  ),
+                  _buildBulletPoint(
+                    context,
+                    'Infosys Springboard — Full Stack (MEAN).',
+                  ),
+                  _buildBulletPoint(
+                    context,
+                    'Udemy — Prompt Engineering & LLM Integration.',
+                  ),
+                  _buildBulletPoint(
+                    context,
+                    'GUVI & Shiash Info Solutions — Python Full Stack Internship.',
+                  ),
                   const SizedBox(height: AppSpacing.p32),
                 ],
               ),
@@ -677,7 +680,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Expanded(
               child: Text(
                 role,
-                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             Text(
@@ -716,7 +721,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       children: [
         Text(
           name,
-          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
         Text(
           tech,
@@ -746,7 +753,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('• ', style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold)),
+          Text(
+            '• ',
+            style: TextStyle(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           Expanded(
             child: Text(
               text,
